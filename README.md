@@ -1,205 +1,202 @@
-# Binance Micro-Profit Bot
+# 🤖 Bot de Scalping Automático
 
-Bot de trading automatizado para Binance que opera micro-lucros em múltiplos pares, começando com **Spot** e suportando **Futures 1x** posteriormente.
+Bot de scalping/micro-swing para criptomoedas na Binance, focado em operações rápidas com targets curtos.
 
-## 🎯 Objetivo
+## 📋 Características
 
-Bot que:
-- Monitora **todos os pares** mas **só opera os elegíveis** (liquidez, spread, ATR%, variação)
-- Faz trades curtos de **~3% TP** com **~1.5% SL** (ajustáveis)
-- Mantém **cooldown** por símbolo após saída
-- Começa em **Spot**; depois permite **Futures 1x** sem mudar estratégia
-- Mantém **logs detalhados** e gera **métricas diárias** (winrate, PnL líquido, horários bons/ruins)
-- Ranking dinâmico de pares ("top N") atualizado a cada X min
-
-## 📋 Requisitos
-
-- Python 3.11+
-- Conta Binance (testnet recomendado para testes)
-- API Key e Secret da Binance
+- **Múltiplas operações por dia** (20-50+ trades)
+- **Targets curtos**: +0.4% a +0.8%
+- **Stop Loss apertado**: -0.3% a -0.7%
+- **Estratégia**: EMA 9/21 + volume + candle breakout
+- **Timeframes**: 1m (entrada) e 5m (tendência)
+- **Top 3 pares mais voláteis** selecionados automaticamente
+- **Modo SPOT** (preparado para migração para FUTURES)
 
 ## 🚀 Instalação
 
-1. Clone o repositório:
+### 1. Clone o repositório
+
 ```bash
-git clone <repo-url>
-cd binance-microbot
+cd Scalping
 ```
 
-2. Instale as dependências:
+### 2. Instale as dependências
+
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Configure o `.env`:
+### 3. Configure as variáveis de ambiente
+
+Copie o arquivo `.env.example` para `.env`:
+
 ```bash
-cp .env.example .env
+copy .env.example .env
 ```
 
-Edite o `.env` e preencha:
+Edite o `.env` e adicione suas credenciais da Binance:
+
 ```env
-BINANCE_API_KEY=sua_api_key
-BINANCE_API_SECRET=sua_api_secret
-MODE=SPOT
-USE_TESTNET=true
+BINANCE_API_KEY=sua_api_key_aqui
+BINANCE_API_SECRET=sua_api_secret_aqui
 ```
 
-## ⚙️ Configuração
+**⚠️ IMPORTANTE**: 
+- Use API keys com permissões apenas de **SPOT trading**
+- NUNCA compartilhe suas keys
+- Para testes, considere usar a testnet da Binance primeiro
 
-### Parâmetros Principais
+### 4. Ajuste as configurações (opcional)
 
-- `MODE`: `SPOT` ou `FUTURES` (padrão: `SPOT`)
-- `USE_TESTNET`: `true` ou `false` (padrão: `true`)
-- `TOP_N`: Quantos pares do ranking operar (padrão: 15)
-- `MAX_POSITIONS`: Posições simultâneas (padrão: 5)
-- `CAPITAL_PER_TRADE`: Capital por trade em % (padrão: 0.10 = 10%)
-- `TAKE_PROFIT_PERCENT`: TP em % (padrão: 0.03 = 3%)
-- `STOP_LOSS_PERCENT`: SL em % (padrão: 0.015 = 1.5%)
+Edite o `.env` para personalizar:
 
-### Filtros de Elegibilidade
+- `TAKE_PROFIT_PCT`: Percentual de lucro (padrão: 0.5%)
+- `STOP_LOSS_PCT`: Percentual de stop loss (padrão: 0.4%)
+- `MAX_PAIRS`: Quantidade de pares para operar (padrão: 3)
+- `MIN_VOLUME_24H`: Volume mínimo em 24h (padrão: 30M USDT)
 
-- `MIN_VOLUME_USDT`: Volume mínimo 24h (Spot)
-- `MIN_FUTURES_VOLUME_USDT`: Volume mínimo 24h (Futures)
-- `MAX_SPREAD_PERCENT`: Spread máximo permitido
-- `MIN_VOLATILITY_PERCENT`: ATR% mínimo
-- `MIN_DAILY_CHANGE_PERCENT`: Variação 24h mínima
+## ▶️ Como Usar
 
-## 🏃 Como Rodar
+### Executar o bot
 
-### Modo Normal
 ```bash
-make run
-# ou
-python -m app.main run
+python main.py
 ```
 
-### Modo Dry-Run (Simulação)
-```bash
-make dry
-# ou
-python -m app.main run --dry-run
-```
+O bot irá:
 
-### Ver Estatísticas
-```bash
-make stats
-# ou
-python -m app.main stats
-```
+1. Escanear o mercado e selecionar os top 3 pares mais voláteis
+2. Conectar aos WebSockets para candles em tempo real
+3. Monitorar sinais de entrada baseados na estratégia
+4. Executar compras/vendas automaticamente
+5. Registrar todos os trades em CSV e SQLite
 
-### Ver Ranking de Símbolos
-```bash
-make rank
-# ou
-python -m app.main rank
-```
+### Parar o bot
 
-### Replay de Trades
-```bash
-python -m app.main replay --symbol BTCUSDT --date 2025-01-15
-```
-
-### Docker
-```bash
-make docker
-# ou
-docker compose up --build -d
-```
-
-## 🔄 Alternando para Futures 1x
-
-1. Edite o `.env`:
-```env
-MODE=FUTURES
-USE_TESTNET=true
-```
-
-2. Certifique-se de ter saldo na conta Futures testnet
-
-3. Rode normalmente:
-```bash
-make run
-```
-
-O bot automaticamente usa os adapters corretos para Futures sem mudar a estratégia.
+Pressione `Ctrl+C` para parar o bot de forma segura.
 
 ## 📊 Estratégia
 
-### Basic Pullback
+### Sinais de Entrada
 
-- **Contexto**: Tendência (EMA9 > EMA21 → só long)
-- **Gatilho**: Pullback rápido (queda ≥ 1.2% nos últimos 3-5 candles 1m) + candle de confirmação
-- **Alvos**:
-  - TP = `TAKE_PROFIT_PERCENT` (ajustado +0.5% se ATR% alto)
-  - SL = `STOP_LOSS_PERCENT` (ajustado +0.3% se ATR% alto)
-  - Trailing: inicia em `TRAILING_START_PERCENT`, step `TRAILING_STEP_PERCENT`
+O bot entra em uma posição quando:
 
-## 📁 Estrutura do Projeto
+1. ✅ **Tendência 5m alinhada**: EMA 9 > EMA 21 e inclinada para cima
+2. ✅ **Tendência 1m alinhada**: EMA 9 > EMA 21 e inclinada para cima
+3. ✅ **Candle forte**: Close > High do candle anterior
+4. ✅ **Volume acima da média**: Volume atual > média dos últimos 20 candles
+5. ✅ **Spread aceitável**: Spread < 0.1%
 
-```
-binance-microbot/
-├── app/
-│   ├── main.py              # Entrypoint CLI
-│   ├── config.py            # Configuração Pydantic
-│   ├── utils/               # Utilitários (logger, time, math, files)
-│   ├── data/                # Schemas, store, ranker
-│   ├── adapters/binance/    # REST, WebSockets, symbols
-│   ├── core/                # FSM, risk, executor, context, strategy, scheduler
-│   ├── strategies/          # Estratégias (basic_pullback)
-│   └── cli/                 # Comandos CLI
-├── tests/                   # Testes
-├── logs/                    # Logs e dados
-├── .env.example             # Exemplo de configuração
-├── requirements.txt         # Dependências
-├── Dockerfile               # Docker
-├── docker-compose.yml       # Docker Compose
-└── Makefile                 # Comandos úteis
-```
+### Saída
 
-## 📝 Logs
+- **Take Profit**: +0.5% (configurável)
+- **Stop Loss**: -0.4% (configurável)
+- **1 trade por vez por par**: Evita sobreposição
 
-Logs são salvos em `./logs/`:
-- `bot.log`: Log geral (JSON estruturado)
-- `<SYMBOL>.log`: Log por símbolo
-- `trades.json`: Histórico de trades
-- `daily_stats.json`: Estatísticas diárias agregadas
-- `rank_<timestamp>.json`: Snapshots do ranking
+## 📝 Logs e Banco de Dados SQLite
 
-## ⚠️ Avisos de Risco
+Todos os trades são registrados em:
 
-- **Este bot opera com dinheiro real**. Use testnet para testes.
-- **Taxas**: Binance cobra taxas de trading (0.1% maker/taker no Spot, variável no Futures).
-- **Spread**: Spread pode impactar lucros em trades pequenos.
-- **Funding**: Se usar Futures, há taxas de funding periódicas.
-- **Limites**: Respeite os limites de rate da Binance.
-- **Perdas**: Trading envolve risco de perda total do capital.
+- **CSV**: `trades_log.csv` (padrão)
+- **SQLite**: `trades.db` (padrão) - **Sistema completo para aprendizado!**
 
-## 🧪 Testes
+### O que é salvo no SQLite:
+
+1. **Trades** - Todos os trades executados (compra + venda)
+2. **Sinais** - Todos os sinais detectados (mesmo que não executados)
+3. **Performance Diária** - Resumo automático por dia
+4. **Histórico de Configurações** - Mudanças nos parâmetros do bot
+
+### Como Analisar os Dados:
 
 ```bash
-make test
-# ou
-pytest -q
+# Script interativo de análise
+python analyze_db.py
 ```
 
-## 🛣️ Roadmap
+O script oferece:
+- 📊 Estatísticas gerais de trades
+- 🔔 Análise de sinais (executados vs não executados)
+- 📅 Performance diária
+- 🔍 Queries SQL customizadas
+- 🗄️ Estrutura do banco de dados
 
-- [ ] Trailing stop aprimorado
-- [ ] Múltiplas estratégias
-- [ ] Pesos por símbolo com aprendizado dos logs
-- [ ] Blacklist automática de símbolos ruins
-- [ ] CSV export automático diário
-- [ ] Ajuste dinâmico de TP/SL baseado em ATR%
+**📚 Veja o guia completo:** [`doc/sqlite/README.md`](doc/sqlite/README.md)
+
+### Campos Registrados:
+- Timestamp, símbolo, preços de entrada/saída
+- Quantidade, PnL (%), PnL (USDT)
+- Duração, motivo da saída (TP/SL)
+- Volume, estratégia usada
+- EMAs, volume médio (nos sinais)
+
+## 🔧 Estrutura do Projeto
+
+```
+Scalping/
+├── main.py                 # Runner principal
+├── config.py               # Configurações
+├── market_scanner.py       # Scanner de volatilidade
+├── websocket_manager.py    # Gerenciador WebSocket
+├── strategy.py             # Estratégia EMA 9/21
+├── trade_executor.py       # Executor de trades
+├── logger.py               # Sistema de logs
+├── database.py             # Gerenciador SQLite completo
+├── analyze_db.py           # Script de análise do banco
+├── requirements.txt        # Dependências
+├── env_template.txt        # Template de configuração
+├── doc/                    # Documentação completa
+│   ├── README.md          # Índice da documentação
+│   ├── setup/             # Guias de instalação
+│   ├── strategy/          # Documentação da estratégia
+│   └── sqlite/            # Guia do SQLite
+└── README.md               # Este arquivo
+```
+
+## ⚠️ Avisos Importantes
+
+1. **Comece com valores pequenos** para testar
+2. **Use SPOT primeiro** antes de migrar para FUTURES
+3. **Monitore os logs** regularmente
+4. **Ajuste TP/SL** conforme a volatilidade do mercado
+5. **Não deixe o bot rodando sem supervisão** nas primeiras semanas
+
+## 🔄 Migração para FUTURES
+
+Quando estiver 100% calibrado em SPOT:
+
+1. Altere `TRADING_MODE=FUTURES` no `.env`
+2. Ajuste `TAKE_PROFIT_PCT` e `STOP_LOSS_PCT` (menores, devido à alavancagem)
+3. Configure alavancagem na Binance (comece com x2, x3)
+4. Teste com valores mínimos primeiro
+
+## 📈 Próximos Passos
+
+- [ ] Trailing stop opcional
+- [ ] Filtro de horários (evitar baixa liquidez)
+- [ ] Dashboard web para monitoramento
+- [ ] Backtesting da estratégia
+- [ ] Suporte a múltiplas estratégias
+
+## 🐛 Troubleshooting
+
+### Erro: "API keys inválidas"
+- Verifique se as keys estão corretas no `.env`
+- Confirme que as keys têm permissão de trading
+
+### Erro: "Saldo insuficiente"
+- Mínimo necessário: $10 USDT
+- Verifique seu saldo na Binance
+
+### Bot não encontra pares
+- Reduza `MIN_VOLUME_24H` no `.env`
+- Verifique sua conexão com a internet
 
 ## 📄 Licença
 
-Este projeto é fornecido "como está", sem garantias. Use por sua conta e risco.
-
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas! Por favor, abra uma issue ou PR.
+Este projeto é para uso educacional. Use por sua conta e risco.
 
 ---
 
-**Desenvolvido com ❤️ para trading automatizado**
+**Desenvolvido para operações rápidas e repetitivas. Scalping bom é feio: take pequeno, stop pequeno, muitas tentativas por dia.** 🚀
 

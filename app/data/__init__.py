@@ -1,2 +1,0 @@
-"""Camada de dados"""
-

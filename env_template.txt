@@ -1,0 +1,46 @@
+# Binance API Credentials
+BINANCE_API_KEY=your_api_key_here
+BINANCE_API_SECRET=your_api_secret_here
+
+# Trading Configuration
+TRADING_MODE=SPOT
+BASE_CURRENCY=USDT
+MIN_VOLUME_24H=30000000
+MIN_PRICE=0.01
+MIN_VOLATILITY=0.3
+MAX_PAIRS=3
+
+# Strategy Parameters
+TIMEFRAME_ENTRY=1m
+TIMEFRAME_TREND=5m
+EMA_FAST=9
+EMA_SLOW=21
+VOLUME_PERIOD=20
+
+# Risk Management
+TAKE_PROFIT_PCT=0.5
+STOP_LOSS_PCT=0.4
+MAX_SPREAD_PCT=0.1
+MAX_SLIPPAGE_PCT=0.05
+
+# Position Management
+MAX_POSITIONS_PER_PAIR=1
+MAX_TOTAL_POSITIONS=3
+
+# Logging
+LOG_TO_CSV=true
+LOG_TO_DB=true
+LOG_FILE=trades_log.csv
+DB_FILE=trades.db
+
+# Proxy e Firewall (opcional)
+USE_PROXY=false
+PROXY_HOST=
+PROXY_PORT=
+PROXY_USER=
+PROXY_PASS=
+
+# Fallback: usar polling se WebSocket falhar
+USE_WEBSOCKET=true
+POLLING_INTERVAL=5
+
